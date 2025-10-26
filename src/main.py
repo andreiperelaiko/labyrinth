@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
+    """Точка входа приложения."""
     parser = argparse.ArgumentParser(description="Обработка аргументов.")
     parser.add_argument(
         "task_type", type=str, help="Тип решаемой задачи", choices=["generate", "solve"]
