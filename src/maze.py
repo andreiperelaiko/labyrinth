@@ -1,10 +1,15 @@
-import networkx as nx
-import os
 from enum import Enum
+import networkx as nx
+import numpy as np
+import os
 
+#Think about fabric of class with from_char and to_char
 class CellType(Enum):
     FREE = 0
     WALL = 1
+    PATH = 2
+    START = 3
+    END = 4
     
     @staticmethod
     def from_char(char):
@@ -13,7 +18,22 @@ class CellType(Enum):
         else:
             return CellType.FREE
 
-        
+    @staticmethod
+    def to_char(cell_type):
+        if cell_type == CellType.FREE:
+            return " "
+        elif cell_type == CellType.WALL:
+            return "#"
+        elif cell_type == CellType.PATH:
+            return "."
+        elif cell_type == CellType.START:
+            return "O"
+        elif cell_type == CellType.END:
+            return "X"
+        else:
+            return "?"
+
+#TODO: Think about implementation grid cordination, may be with @property
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -24,12 +44,27 @@ class Point:
             return Point(self.x + other.x, self.y + other.y)
         raise Exception(f"cant add Point to {repr(other)}")
 
+    def __sub__(self, other):
+        if isinstance(other, Point):
+            return Point(self.x + other.x, self.y + other.y)
+        raise Exception(f"cant add Point to {repr(other)}")
+    
+    def manhattan_distance(self, other):
+        if isinstance(other, Point):
+            return abs(self.x - other.x) + abs(self.y - other.y)
+        raise Exception(f"cant add Point to {repr(other)}")
+        
+
     def __hash__(self):
         return hash((self.x, self.y))
 
     def __eq__(self, other):
         return isinstance(other, Point) and \
               self.x == other.x and self.y == other.y
+    
+    def __lt__(self, other):
+        return (self.x, self.y) < (other.x, other.y)
+
 
     def __repr__(self):
         return f"Point({self.x}, {self.y})"
@@ -74,7 +109,8 @@ def validate_maze_from_grid(grid):
         if not grid[0][grid_y] == grid[-1][grid_y] == CellType.WALL:
             raise Exception(f"Maze border must be a wall")
     
-
+#TODO: May be Maze should inherit from nx.Graph
+#      May be need add separate class Grid(or not)
 class Maze:
     def __init__(self):
         self.height = 0
@@ -87,6 +123,9 @@ class Maze:
             if adjpoint in self.graph:
                 adjacent.append(adjpoint)
         return adjacent
+
+    def get_neighbors(self, point):
+        return self.graph.neighbors(point)
 
     @classmethod
     def from_size(cls, height, width, empty=True):
@@ -136,18 +175,70 @@ class Maze:
                 grid.append(maze_line)
         maze = Maze.from_grid(grid)
         return maze
-
-    def __str__(self):
-        grid = [['#' for _ in range(self.width * 2 + 1)] for _ in range(self.height * 2 + 1)]
+    
+    def _to_grid(self):
+        grid_height = self.height*2+1
+        grid_width  = self.width*2+1
+        grid = np.full((grid_height, grid_width), CellType.WALL, dtype=object) 
 
         for point in self.graph.nodes:
-            grid[point.x*2+1][point.y*2+1] = ' '
+            grid_x = point.x*2+1
+            grid_y = point.y*2+1 
+            grid[grid_x][grid_y] = CellType.FREE
 
         for edge in self.graph.edges:
-            point = edge[0] + edge[1] + Point(1, 1)
-            grid[point.x][point.y] = ' '
+            grid_x = edge[0].x + edge[1].x + 1
+            grid_y = edge[0].y + edge[1].y + 1
+            grid[grid_x][grid_y] = CellType.FREE
+        
+        return grid
+    
+    def _display_path(self, path):
+        grid = self._to_grid()
 
-        return "\n".join(map("".join, grid))
+        for point in path:
+            grid_x = point.x*2+1
+            grid_y = point.y*2+1
+            grid[grid_x][grid_y] = CellType.PATH
+
+        for edge in zip(path, path[1:]):
+            grid_x = edge[0].x + edge[1].x + 1
+            grid_y = edge[0].y + edge[1].y + 1
+            grid[grid_x][grid_y] = CellType.PATH
+        
+        grid_start_point_x = path[0].x*2+1
+        grid_start_point_y = path[0].y*2+1
+        grid[grid_start_point_x][grid_start_point_y] = CellType.START
+        
+        grid_end_point_x = path[-1].x*2+1
+        grid_end_point_y = path[-1].y*2+1
+        grid[grid_end_point_x][grid_end_point_y] = CellType.END
+        
+        return grid
+
+
+    def to_grid(self, with_edges=True):
+        grid = self._to_grid()
+        if not with_edges:
+            grid = grid[1::2, 1::2]
+        return grid
+
+    def _grid_to_str(self, grid):
+        result = []
+        for line in grid:
+            result.append("".join(list(map(CellType.to_char, line))))
+        return "\n".join(result)
+
+    def display_path(self, path, with_edges=True):
+        #TODO: add check to valid path
+        grid = self._display_path(path)
+        if not with_edges:
+            grid = grid[1::2, 1::2]
+        return self._grid_to_str(grid)
+
+    def __str__(self):
+        grid = self.to_grid()
+        return self._grid_to_str(grid)
 
     def __contains__(self, point):
         return point in self.graph                

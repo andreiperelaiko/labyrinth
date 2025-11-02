@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
-from maze import Maze, Point
+from abc import ABC
+from maze import Maze
 import random
 
 class Generator(ABC):
