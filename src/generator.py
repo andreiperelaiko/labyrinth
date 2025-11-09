@@ -1,13 +1,31 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from maze import Maze
+from registry import register_generator
+import argparse
 import random
 
+
 class Generator(ABC):
-    def generate(self, height, width):
+    @abstractmethod
+    def generate(self, height, width) -> Maze:
         pass
 
+    @staticmethod
+    def create_parser() -> argparse.ArgumentParser:
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument("-a", "--algorithm", choices=["dfs", "prim"],
+                            help="Type of generating algorithm")
+        parser.add_argument("-w", "--width", type=int,
+                            help="Width of labyrinths")
+        parser.add_argument("--height", type=int, help="Height of labyrinths")
+        parser.add_argument("-o", "--output", type=str,
+                            help="Path to save labyrinth")
+        return parser
+
+
+@register_generator("dfs")
 class DfsGenerator(Generator):
-    def generate(self, height, width):
+    def generate(self, height, width) -> Maze:
         self.maze = Maze.from_size(height, width, empty=False)
         self.visited = set()
         self.start_point = random.choice(list(self.maze.graph.nodes()))
@@ -22,6 +40,8 @@ class DfsGenerator(Generator):
                 self.maze.graph.add_edge(cur_point, nxt_point)
                 self.dfs(nxt_point)
 
+
+@register_generator("prim")
 class PrimGenerator(Generator):
     def generate(self, height, width):
         self.maze = Maze.from_size(height, width, empty=False)
@@ -47,11 +67,3 @@ class PrimGenerator(Generator):
             edge = random.choice(list(self.boundary_edges))
             self.boundary_edges.discard(edge)
             self.process_edge(edge)
-
-
-if __name__ == "__main__":
-    generator = PrimGenerator()
-    maze = generator.generate(10, 10)
-
-    print(maze)
-    
