@@ -1,1 +1,1 @@
-Invalid point format: 11, expected format: x,y
+Invalid point format: "11", expected format: x,y
