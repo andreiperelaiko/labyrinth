@@ -1,11 +1,13 @@
+import argparse
+
 from generator import Generator
 from maze import Maze
 from registry import generator_registry, solver_registry
 from solver import Solver
-import argparse
 
 
-def main():
+def main() -> None:
+    """Initialize parser for labyrinth generation/solving algorithm."""
     parser = argparse.ArgumentParser(
         prog="maze-app",
         description="Maze generator and solver CLI application.",
@@ -37,7 +39,7 @@ def main():
     )
     try:
         args = parser.parse_args()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(e)
         return
 

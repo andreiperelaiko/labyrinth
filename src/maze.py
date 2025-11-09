@@ -1,10 +1,18 @@
+import os
+from collections.abc import Iterable
 from enum import Enum
+from itertools import pairwise
+from pathlib import Path
+
 import networkx as nx
 import numpy as np
-import os
+
+import errors
 
 
 class CellType(Enum):
+    """Represent all cell type."""
+
     FREE = 0
     WALL = 1
     PATH = 2
@@ -12,14 +20,15 @@ class CellType(Enum):
     END = 4
 
     @staticmethod
-    def from_char(char):
+    def from_char(char: str) -> "CellType":
+        """Convert string to CellType."""
         if char == "#":
             return CellType.WALL
-        else:
-            return CellType.FREE
+        return CellType.FREE
 
     @staticmethod
-    def to_char(cell_type):
+    def to_char(cell_type: "CellType") -> str:
+        """Convert CellType to string."""
         mapping = {
             CellType.FREE: " ",
             CellType.WALL: "#",
@@ -31,38 +40,42 @@ class CellType(Enum):
 
 
 class Point:
-    def __init__(self, x, y):
+    """Representation of cell with coordinate."""
+
+    def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
 
-    def __add__(self, other):
+    def __add__(self, other: "Point") -> "Point":
         if isinstance(other, Point):
             return Point(self.x + other.x, self.y + other.y)
-        raise Exception(f"cant add Point to {repr(other)}")
+        raise errors.InvalidPointError
 
-    def __sub__(self, other):
+    def __sub__(self, other: "Point") -> "Point":
         if isinstance(other, Point):
             return Point(self.x + other.x, self.y + other.y)
-        raise Exception(f"cant add Point to {repr(other)}")
+        raise errors.InvalidPointError
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.x, self.y))
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Point") -> bool:
         return isinstance(other, Point) and self.x == other.x and self.y == other.y
 
-    def __lt__(self, other):
+    def __lt__(self, other: "Point") -> bool:
         return (self.x, self.y) < (other.x, other.y)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Point({self.x}, {self.y})"
 
-    def manhattan_distance(self, other):
+    def manhattan_distance(self, other: "Point") -> int:
+        """Return manhatten distance with two point."""
         if isinstance(other, Point):
             return abs(self.x - other.x) + abs(self.y - other.y)
-        raise Exception(f"cant add Point to {repr(other)}")
+        raise errors.InvalidPointError
 
-    def get_adjacent(self):
+    def get_adjacent(self) -> list["Point"]:
+        """Return adjacent points on the side."""
         return [
             Point(self.x, self.y + 1),
             Point(self.x, self.y - 1),
@@ -71,56 +84,72 @@ class Point:
         ]
 
 
-def validate_maze_from_grid(grid):
-    if not set(map(lambda x: len(x), grid)) != 1:
-        raise Exception(f"Cannot create Maze from grid: invalid dimensions")
+def validate_grid_cell(height: int, width: int, grid: list | np.ndarray) -> None:
+    """Validate cell in grid.
 
-    if len(grid) % 2 != 1:
-        raise Exception("Invalid maze height")
-    if len(grid[0]) % 2 != 1:
-        raise Exception("Invalid maze width")
-
-    height = len(grid) // 2
-    width = len(grid[0]) // 2
-
-    # Check that all cells are free
+    Check that cell in grid:
+        1. All cels are free
+        2. Wall are around labyrithm
+    """
     for cell_x in range(height):
         for cell_y in range(width):
             grid_x = cell_x * 2 + 1
             grid_y = cell_y * 2 + 1
             if grid[grid_x][grid_y] != CellType.FREE:
-                raise Exception(f"Cell in maze must be free: ({grid_x, grid_y})")
+                raise errors.InvalidMazeCellError(grid_x, grid_y)
 
-    # Check that around maze wall
     for cell_x in range(height):
         grid_x = cell_x * 2 + 1
         if not grid[grid_x][0] == grid[grid_x][-1] == CellType.WALL:
-            raise Exception(f"Maze border must be a wall")
+            raise errors.InvalidMazeBorderError
 
     for cell_y in range(width):
         grid_y = cell_y * 2 + 1
         if not grid[0][grid_y] == grid[-1][grid_y] == CellType.WALL:
-            raise Exception(f"Maze border must be a wall")
+            raise errors.InvalidMazeBorderError
+
+
+def validate_grid(grid: list | np.ndarray) -> None:
+    """Validate grid.
+
+    Check that:
+        1. Grid has 2 dimension with same size
+        2. All cells are free
+        3. Walls are around labyrithms
+    """
+    if not {len(x) for x in grid} != {1}:
+        raise errors.InvalidMazeDimensionError
+
+    if len(grid) % 2 != 1:
+        raise errors.InvalidMazeDimensionError
+    if len(grid[0]) % 2 != 1:
+        raise errors.InvalidMazeDimensionError
+
+    height = len(grid) // 2
+    width = len(grid[0]) // 2
+
+    validate_grid_cell(height, width, grid)
 
 
 class Maze:
-    def __init__(self):
+    """Represet a labyrithm."""
+
+    def __init__(self) -> None:
         self.height = 0
         self.width = 0
         self.graph = nx.Graph()
 
-    def get_adjacent(self, point):
-        adjacent = []
-        for adjpoint in point.get_adjacent():
-            if adjpoint in self.graph:
-                adjacent.append(adjpoint)
-        return adjacent
+    def get_adjacent(self, point: Point) -> list[Point]:
+        """Return adjacent points in labirythm."""
+        return [adjpoint for adjpoint in point.get_adjacent() if adjpoint in self.graph]
 
-    def get_neighbors(self, point):
+    def get_neighbors(self, point: Point) -> Iterable[Point]:
+        """Return connnected points."""
         return self.graph.neighbors(point)
 
     @classmethod
-    def from_size(cls, height, width, empty=True):
+    def from_size(cls, height: int, width: int, *, empty: bool = True) -> "Maze":
+        """Create empty/filled labyrithm from size."""
         maze = cls()
         maze.height = height
         maze.width = width
@@ -137,8 +166,9 @@ class Maze:
         return maze
 
     @classmethod
-    def from_grid(cls, grid):
-        validate_maze_from_grid(grid)
+    def from_grid(cls, grid: list | np.ndarray) -> "Maze":
+        """Create labyrithm from grid."""
+        validate_grid(grid)
         maze = cls()
         maze.height = len(grid) // 2
         maze.width = len(grid[0]) // 2
@@ -155,29 +185,34 @@ class Maze:
         return maze
 
     @classmethod
-    def from_file(cls, path):
-        if not os.path.isfile(path):
-            raise Exception(f"Invalid path to maze: {path}")
-        if not os.access(path, os.R_OK):
-            raise Exception(f"File {path} cannot be read")
+    def from_file(cls, path: str) -> "Maze":
+        """Load labyrithm from file."""
+        path_obj = Path(path)
+        if not path_obj.is_file() or not os.access(path, os.R_OK):
+            raise errors.InvalidMazePathError(path)
 
         grid = []
-        with open(path, "r") as file:
-            for line in file.readlines():
+        with path_obj.open() as file:
+            for line in file:
                 maze_line = list(map(CellType.from_char, list(line.strip())))
                 grid.append(maze_line)
-        maze = Maze.from_grid(grid)
-        return maze
+        return Maze.from_grid(grid)
 
-    def save(self, path, with_edges=True):
-        with open(path, "w") as file:
+    def save(self, path: str, *, with_edges: bool = True) -> None:
+        """Save labyrithm in file."""
+        path_obj = Path(path)
+        with path_obj.open("w") as file:
             file.write(self._grid_to_str(self.to_grid(with_edges=with_edges)) + "\n")
 
-    def save_solution(self, solution: list, path: str, with_edges=True):
-        with open(path, "w") as file:
+    def save_solution(
+        self, solution: list, path: str, *, with_edges: bool = True
+    ) -> None:
+        """Save solution of labyrithm in file."""
+        path_obj = Path(path)
+        with path_obj.open("w") as file:
             file.write(self.display_path(solution, with_edges=with_edges) + "\n")
 
-    def _to_grid(self):
+    def _to_grid(self) -> np.ndarray:
         grid_height = self.height * 2 + 1
         grid_width = self.width * 2 + 1
         grid = np.full((grid_height, grid_width), CellType.WALL, dtype=object)
@@ -194,7 +229,7 @@ class Maze:
 
         return grid
 
-    def _display_path(self, path):
+    def _display_path(self, path: list[Point]) -> np.ndarray:
         grid = self._to_grid()
 
         for point in path:
@@ -202,7 +237,7 @@ class Maze:
             grid_y = point.y * 2 + 1
             grid[grid_x][grid_y] = CellType.PATH
 
-        for edge in zip(path, path[1:]):
+        for edge in pairwise(path):
             grid_x = edge[0].x + edge[1].x + 1
             grid_y = edge[0].y + edge[1].y + 1
             grid[grid_x][grid_y] = CellType.PATH
@@ -217,28 +252,27 @@ class Maze:
 
         return grid
 
-    def to_grid(self, with_edges=True):
+    def to_grid(self, *, with_edges: bool = True) -> np.ndarray:
+        """Represent maze as grid."""
         grid = self._to_grid()
         if not with_edges:
             grid = grid[1::2, 1::2]
         return grid
 
-    def _grid_to_str(self, grid):
-        result = []
-        for line in grid:
-            result.append("".join(list(map(CellType.to_char, line))))
+    def _grid_to_str(self, grid: list | np.ndarray) -> str:
+        result = ["".join(map(CellType.to_char, line)) for line in grid]
         return "\n".join(result)
 
-    def display_path(self, path, with_edges=True):
-        # TODO: add check to valid path
+    def display_path(self, path: list[Point], *, with_edges: bool = True) -> str:
+        """Display maze path as string."""
         grid = self._display_path(path)
         if not with_edges:
             grid = grid[1::2, 1::2]
         return self._grid_to_str(grid)
 
-    def __str__(self):
+    def __str__(self) -> str:
         grid = self.to_grid()
         return self._grid_to_str(grid)
 
-    def __contains__(self, point):
+    def __contains__(self, point: Point) -> bool:
         return point in self.graph
