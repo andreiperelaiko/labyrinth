@@ -13,13 +13,15 @@ class Generator(ABC):
     @staticmethod
     def create_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument("-a", "--algorithm", choices=["dfs", "prim"],
-                            help="Type of generating algorithm")
-        parser.add_argument("-w", "--width", type=int,
-                            help="Width of labyrinths")
+        parser.add_argument(
+            "-a",
+            "--algorithm",
+            choices=["dfs", "prim"],
+            help="Type of generating algorithm",
+        )
+        parser.add_argument("-w", "--width", type=int, help="Width of labyrinths")
         parser.add_argument("--height", type=int, help="Height of labyrinths")
-        parser.add_argument("-o", "--output", type=str,
-                            help="Path to save labyrinth")
+        parser.add_argument("-o", "--output", type=str, help="Path to save labyrinth")
         return parser
 
 

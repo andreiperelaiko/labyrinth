@@ -9,14 +9,21 @@ def main():
     parser = argparse.ArgumentParser(
         prog="maze-app",
         description="Maze generator and solver CLI application.",
-        add_help=False
+        add_help=False,
     )
-    parser.add_argument("-h", "--help", action="help",
-                        help="Show this help message and exit.")
-    parser.add_argument("-V", "--version", action="version",
-                        version="1.0.0", help="Print version information and exit.")
+    parser.add_argument(
+        "-h", "--help", action="help", help="Show this help message and exit."
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="1.0.0",
+        help="Print version information and exit.",
+    )
     subparsers = parser.add_subparsers(
-        dest="command", metavar="COMMAND", help="Type of task")
+        dest="command", metavar="COMMAND", help="Type of task"
+    )
 
     subparsers.add_parser(
         "generate",

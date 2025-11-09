@@ -15,24 +15,27 @@ class Solver(ABC):
     def create_parser() -> argparse.ArgumentParser:
         def point_validation(point_str):
             try:
-                x, y = map(int, point_str.split(','))
+                x, y = map(int, point_str.split(","))
                 return Point(x, y)
             except Exception as e:
                 raise Exception(
-                    f"Invalid point format: \"{point_str}\", expected format: x,y"
+                    f'Invalid point format: "{point_str}", expected format: x,y'
                 )
 
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument(
-            "--algorithm", choices=["astar", "dijkstra"], help="Type of solving algorithm")
-        parser.add_argument("--file", type=str,
-                            help="File with labyrinth description")
-        parser.add_argument("--output", type=str,
-                            help="File with labyrinth solution")
-        parser.add_argument("--start", type=point_validation,
-                            help="Starting point of the route")
-        parser.add_argument("--end", type=point_validation,
-                            help="Finish point of the route")
+            "--algorithm",
+            choices=["astar", "dijkstra"],
+            help="Type of solving algorithm",
+        )
+        parser.add_argument("--file", type=str, help="File with labyrinth description")
+        parser.add_argument("--output", type=str, help="File with labyrinth solution")
+        parser.add_argument(
+            "--start", type=point_validation, help="Starting point of the route"
+        )
+        parser.add_argument(
+            "--end", type=point_validation, help="Finish point of the route"
+        )
         return parser
 
 
@@ -63,8 +66,9 @@ class AstarSolver(Solver):
                 if self.dist[adj_point] > self.dist[current] + 1:
                     self.dist[adj_point] = self.dist[current] + 1
                     self.prev[adj_point] = current
-                    q.put((self.dist[adj_point] +
-                          self.heuristics(adj_point), adj_point))
+                    q.put(
+                        (self.dist[adj_point] + self.heuristics(adj_point), adj_point)
+                    )
 
     def restore_path(self):
         path = [self.end_point]
@@ -82,6 +86,7 @@ class DijkstraSolver(AstarSolver):
 if __name__ == "__main__":
     import generator
     from maze import *
+
     generator = generator.PrimGenerator()
     maze = generator.generate(10, 10)
     solver = AstarSolver()

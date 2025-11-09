@@ -13,7 +13,7 @@ class CellType(Enum):
 
     @staticmethod
     def from_char(char):
-        if char == '#':
+        if char == "#":
             return CellType.WALL
         else:
             return CellType.FREE
@@ -49,8 +49,7 @@ class Point:
         return hash((self.x, self.y))
 
     def __eq__(self, other):
-        return isinstance(other, Point) and \
-            self.x == other.x and self.y == other.y
+        return isinstance(other, Point) and self.x == other.x and self.y == other.y
 
     def __lt__(self, other):
         return (self.x, self.y) < (other.x, other.y)
@@ -65,10 +64,10 @@ class Point:
 
     def get_adjacent(self):
         return [
-            Point(self.x, self.y+1),
-            Point(self.x, self.y-1),
-            Point(self.x+1, self.y),
-            Point(self.x-1, self.y),
+            Point(self.x, self.y + 1),
+            Point(self.x, self.y - 1),
+            Point(self.x + 1, self.y),
+            Point(self.x - 1, self.y),
         ]
 
 
@@ -87,20 +86,19 @@ def validate_maze_from_grid(grid):
     # Check that all cells are free
     for cell_x in range(height):
         for cell_y in range(width):
-            grid_x = cell_x*2+1
-            grid_y = cell_y*2+1
+            grid_x = cell_x * 2 + 1
+            grid_y = cell_y * 2 + 1
             if grid[grid_x][grid_y] != CellType.FREE:
-                raise Exception(
-                    f"Cell in maze must be free: ({grid_x, grid_y})")
+                raise Exception(f"Cell in maze must be free: ({grid_x, grid_y})")
 
     # Check that around maze wall
     for cell_x in range(height):
-        grid_x = cell_x*2+1
+        grid_x = cell_x * 2 + 1
         if not grid[grid_x][0] == grid[grid_x][-1] == CellType.WALL:
             raise Exception(f"Maze border must be a wall")
 
     for cell_y in range(width):
-        grid_y = cell_y*2+1
+        grid_y = cell_y * 2 + 1
         if not grid[0][grid_y] == grid[-1][grid_y] == CellType.WALL:
             raise Exception(f"Maze border must be a wall")
 
@@ -164,7 +162,7 @@ class Maze:
             raise Exception(f"File {path} cannot be read")
 
         grid = []
-        with open(path, 'r') as file:
+        with open(path, "r") as file:
             for line in file.readlines():
                 maze_line = list(map(CellType.from_char, list(line.strip())))
                 grid.append(maze_line)
@@ -172,23 +170,21 @@ class Maze:
         return maze
 
     def save(self, path, with_edges=True):
-        with open(path, 'w') as file:
-            file.write(self._grid_to_str(
-                self.to_grid(with_edges=with_edges)) + '\n')
+        with open(path, "w") as file:
+            file.write(self._grid_to_str(self.to_grid(with_edges=with_edges)) + "\n")
 
     def save_solution(self, solution: list, path: str, with_edges=True):
-        with open(path, 'w') as file:
-            file.write(self.display_path(
-                solution, with_edges=with_edges) + '\n')
+        with open(path, "w") as file:
+            file.write(self.display_path(solution, with_edges=with_edges) + "\n")
 
     def _to_grid(self):
-        grid_height = self.height*2+1
-        grid_width = self.width*2+1
+        grid_height = self.height * 2 + 1
+        grid_width = self.width * 2 + 1
         grid = np.full((grid_height, grid_width), CellType.WALL, dtype=object)
 
         for point in self.graph.nodes:
-            grid_x = point.x*2+1
-            grid_y = point.y*2+1
+            grid_x = point.x * 2 + 1
+            grid_y = point.y * 2 + 1
             grid[grid_x][grid_y] = CellType.FREE
 
         for edge in self.graph.edges:
@@ -202,8 +198,8 @@ class Maze:
         grid = self._to_grid()
 
         for point in path:
-            grid_x = point.x*2+1
-            grid_y = point.y*2+1
+            grid_x = point.x * 2 + 1
+            grid_y = point.y * 2 + 1
             grid[grid_x][grid_y] = CellType.PATH
 
         for edge in zip(path, path[1:]):
@@ -211,12 +207,12 @@ class Maze:
             grid_y = edge[0].y + edge[1].y + 1
             grid[grid_x][grid_y] = CellType.PATH
 
-        grid_start_point_x = path[0].x*2+1
-        grid_start_point_y = path[0].y*2+1
+        grid_start_point_x = path[0].x * 2 + 1
+        grid_start_point_y = path[0].y * 2 + 1
         grid[grid_start_point_x][grid_start_point_y] = CellType.START
 
-        grid_end_point_x = path[-1].x*2+1
-        grid_end_point_y = path[-1].y*2+1
+        grid_end_point_x = path[-1].x * 2 + 1
+        grid_end_point_y = path[-1].y * 2 + 1
         grid[grid_end_point_x][grid_end_point_y] = CellType.END
 
         return grid

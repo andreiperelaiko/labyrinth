@@ -5,6 +5,7 @@ def register_solver(name):
     def add_solver(cls):
         solver_registry[name] = cls()
         return cls
+
     return add_solver
 
 
@@ -15,4 +16,5 @@ def register_generator(name):
     def add_generator(cls):
         generator_registry[name] = cls()
         return cls
+
     return add_generator
