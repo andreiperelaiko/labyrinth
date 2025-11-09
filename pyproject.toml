@@ -8,9 +8,11 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+networkx = "^3.5"
+numpy = "^2.3.4"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^24.8.0"
 isort = "^5.13.2"
 ruff = "^0.6.1"

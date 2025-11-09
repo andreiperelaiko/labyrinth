@@ -1,34 +1,50 @@
+from generator import Generator
+from maze import Maze
+from registry import generator_registry, solver_registry
+from solver import Solver
 import argparse
-import logging
-
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
 
 
-def main() -> None:
-    """Точка входа приложения."""
-    parser = argparse.ArgumentParser(description="Обработка аргументов.")
-    parser.add_argument(
-        "task_type", type=str, help="Тип решаемой задачи", choices=["generate", "solve"]
+def main():
+    parser = argparse.ArgumentParser(
+        prog="maze-app",
+        description="Maze generator and solver CLI application.",
+        add_help=False
     )
-    parser.add_argument("--algorithm", type=str, help="Второе слово")
-    parser.add_argument("--width", type=int, help="Ширина лабиринта", default=None)
-    parser.add_argument("--height", type=int, help="Длина лабиринта", default=None)
-    parser.add_argument(
-        "--file", type=str, help="Файл с описанием лабиринта", default=None
-    )
-    parser.add_argument(
-        "--start", type=str, help="Начальная точка маршрута", default=None
-    )
-    parser.add_argument("--end", type=str, help="Конечная точка маршрута", default=None)
-    parser.add_argument(
-        "--output", type=str, help="Путь для сохранения лабиринта", default=None
-    )
+    parser.add_argument("-h", "--help", action="help",
+                        help="Show this help message and exit.")
+    parser.add_argument("-V", "--version", action="version",
+                        version="1.0.0", help="Print version information and exit.")
+    subparsers = parser.add_subparsers(
+        dest="command", metavar="COMMAND", help="Type of task")
 
-    args = parser.parse_args()
+    subparsers.add_parser(
+        "generate",
+        help="Generate a maze with specified algorithm and dimensions.",
+        parents=[Generator.create_parser()],
+    )
+    subparsers.add_parser(
+        "solve",
+        help="Solve a maze with specified algorithm and points.",
+        parents=[Solver.create_parser()],
+    )
+    try:
+        args = parser.parse_args()
+    except Exception as e:
+        print(e)
+        return
 
-    print(args)
+    if args.command == "generate":
+        generator = generator_registry[args.algorithm]
+        maze = generator.generate(args.height, args.width)
+        maze.save(args.output)
+    elif args.command == "solve":
+        solver = solver_registry[args.algorithm]
+        maze = Maze.from_file(args.file)
+        solution = solver.solve(maze, args.start, args.end)
+        maze.save_solution(solution, args.output)
+    else:
+        print(f"{args.command} is not a command")
 
 
 if __name__ == "__main__":
