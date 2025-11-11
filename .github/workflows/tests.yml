@@ -1,0 +1,36 @@
+name: Build and Run Blackbox Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Build Docker image
+        run: docker build . -t app
+
+      - name: Make scripts executable
+        run: chmod +x tests/run.sh
+
+      - name: Run blackbox tests inside Docker
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/tests:/app/tests \
+            app ./tests/run.sh tests/cases/
